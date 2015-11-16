@@ -465,7 +465,6 @@ private:
 
     // Get all the users
     const nite::Array<nite::UserData>& users = userTrackerFrame_.getUsers();
-
     // Get the skeleton for every user
     for (int i = 0; i < users.getSize(); ++i)
     {
@@ -477,6 +476,16 @@ private:
       }
       else if (user.getSkeleton().getState() == nite::SKELETON_TRACKED)
       {
+        //2015.11.13
+        int vec_x,vec_y,vec_z;
+
+        vec_x = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().x - 
+            user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().x;
+        vec_y = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().y - 
+            user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().y;
+        vec_z = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().z - 
+            user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().z;
+
         JointMap named_joints;
 
         named_joints["head"] = (user.getSkeleton().getJoint(nite::JOINT_HEAD));
@@ -494,6 +503,8 @@ private:
         named_joints["right_knee"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE));
         named_joints["left_foot"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT));
         named_joints["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT));
+
+        ROS_INFO("vecX = %d, vecY = %d, vecZ = %d\n", vec_x, vec_y, vec_z);
 
         for (JointMap::iterator it = named_joints.begin(); it != named_joints.end(); ++it)
         {
