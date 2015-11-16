@@ -6,8 +6,10 @@
 *******************************************************************************/
 
 #include "NiTE.h"
-
+#include <ros/ros.h>
+#include <cv_bridge/cv_bridge.h>
 #include <NiteSampleUtilities.h>
+#include <boost/geometry.hpp>
 
 #define MAX_USERS 10
 bool g_visibleUsers[MAX_USERS] = {false};
@@ -91,8 +93,25 @@ int main(int argc, char** argv)
 			else if (user.getSkeleton().getState() == nite::SKELETON_TRACKED)
 			{
 				const nite::SkeletonJoint& head = user.getSkeleton().getJoint(nite::JOINT_HEAD);
-				if (head.getPositionConfidence() > .5)
-				printf("%d. (%5.2f, %5.2f, %5.2f)\n", user.getId(), head.getPosition().x, head.getPosition().y, head.getPosition().z);
+				int vec_x,vec_y,vec_z;
+		//		pos_x = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().x;
+		//		pos_y = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().y;
+		//		pos_z = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().z;
+
+				vec_x = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().x - 
+						user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().x;
+				vec_y = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().y - 
+						user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().y;
+				vec_z = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().z - 
+						user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().z;
+				// printf("vec_x:%d, vec_y:%d, vec_z:%d\n", vec_x, vec_y, vec_z);
+
+				boost::geometry::model::point<int, 3, boost::geometry::cs::cartesian> v1(vec_x, vec_y, vec_z);
+				boost::geometry::model::point<double, 3, boost::geometry::cs::spherical<boost::geometry::degree> > v2;
+				boost::geometry::transform(v1, v2);
+				printf("(theta=%5f, phi=%5f, r=%5f)\n", v2.get<0>(), v2.get<1>(), v2.get<2>());
+				// if (head.getPositionConfidence() > .5)
+				//printf("%d. (%5.2f, %5.2f, %5.2f)\n", user.getId(), head.getPosition().x, head.getPosition().y, head.getPosition().z);
 			}
 		}
 

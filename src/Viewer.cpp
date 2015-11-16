@@ -22,7 +22,8 @@
 #include <NiteSampleUtilities.h>
 //added
 #include <iostream>
-#include <boost/geometry.hpp>
+#include <math.h>
+#define PI 3.1415926
 
 #define GL_WIN_SIZE_X	1280
 #define GL_WIN_SIZE_Y	1024
@@ -343,7 +344,7 @@ void DrawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userDat
 
 void SampleViewer::Display()
 {
-	namespace bg = boost::geometry;	
+	// namespace bg = boost::geometry;	
 
 	nite::UserTrackerFrameRef userTrackerFrame;
 	openni::VideoFrameRef depthFrame;
@@ -470,9 +471,12 @@ void SampleViewer::Display()
 	glDisable(GL_TEXTURE_2D);
 
 	const nite::Array<nite::UserData>& users = userTrackerFrame.getUsers();
-	for (int i = 0; i < users.getSize(); ++i)
-	{
-		const nite::UserData& user = users[i];
+	// 11.16.15 remove for loop for tracking only one user
+	// for (int i = 0; i < users.getSize(); ++i)
+	// {
+		//const nite::UserData& user = users[i];
+	if (users.getSize() > 0) {
+		const nite::UserData& user = users[0];
 
 		updateUserState(user, userTrackerFrame.getTimestamp());
 		if (user.isNew())
@@ -495,7 +499,7 @@ void SampleViewer::Display()
 				DrawBoundingBox(user);
 			}
 
-			if (users[i].getSkeleton().getState() == nite::SKELETON_TRACKED && g_drawSkeleton)
+			if (user.getSkeleton().getState() == nite::SKELETON_TRACKED && g_drawSkeleton)
 			{
 				DrawSkeleton(m_pUserTracker, user);
 			}
@@ -554,10 +558,15 @@ void SampleViewer::Display()
 //mic
 		//convert cartesian to spherical
 		//bg::model::point<int, 3, bg::cs::cartesian> v1(pos_x, pos_y, pos_z);
-		bg::model::point<int, 3, bg::cs::cartesian> v1(vec_x, vec_y, vec_z);
-		bg::model::point<double, 3, bg::cs::spherical<bg::degree> > v2;
-		bg::transform(v1, v2);
-		sprintf(buffer,"(theta=%5f, phi=%5f, r=%5f)", v2.get<0>(), v2.get<1>(), v2.get<2>());
+		// bg::model::point<int, 3, bg::cs::cartesian> v1(vec_x, vec_y, vec_z);
+		// bg::model::point<double, 3, bg::cs::spherical<bg::degree> > v2;
+		// bg::transform(v1, v2);
+		double r, theta, phi;
+		r = sqrt(vec_x*vec_x + vec_y*vec_y + vec_z*vec_z);
+		theta = acos(vec_z / r);
+		phi = atan2(vec_y, vec_x);
+
+		sprintf(buffer,"(theta=%5f, phi=%5f, r=%5f)", (theta/PI) * 180, (phi/PI) * 180, r);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glRasterPos2i(20, 60);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
@@ -583,7 +592,7 @@ void SampleViewer::Display()
 			double lenSq2 = x2*x2 + y2*y2 + z2*z2;
 			double angle = acos(dot/sqrt(lenSq1 * lenSq2));
 			
-			sprintf(buffer,"left angle =%5f", (angle/3.1415926)*180);
+			sprintf(buffer,"left angle =%5f", (angle/PI)*180);
 			glColor3f(1.0f, 0.0f, 0.0f);
 			glRasterPos2i(1000, 50);
 			glPrintString(GLUT_BITMAP_TIMES_ROMAN_24, buffer);

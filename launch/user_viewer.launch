@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="skeleton_tracker" type="user_viewer" name="user_viewer" output="screen"/>
+	
+</launch>
