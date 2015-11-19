@@ -9,6 +9,7 @@
 #define _NITE_USER_VIEWER_H_
 
 #include "NiTE.h"
+#include <ros/ros.h>
 
 #define MAX_DEPTH 10000
 
@@ -33,6 +34,8 @@ protected:
 	void Finalize();
 
 private:
+	ros::Publisher movePublisher;
+
 	SampleViewer(const SampleViewer&);
 	SampleViewer& operator=(SampleViewer&);
 
@@ -52,6 +55,11 @@ private:
 
 	nite::UserId m_poseUser;
 	uint64_t m_poseTime;
+
+	int shoulderYaw;
+	int radian2Degree(double radian, int initialAngle);	// change from radian to degree
+	int angleHandler(int inputAngle);	// range limit 0 to 360
+	void actionPublish(int shoulderYaw, int shoulderPitch, int elbowYaw);
 };
 
 

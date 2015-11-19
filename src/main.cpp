@@ -5,7 +5,7 @@
 *                                                                              *
 *******************************************************************************/
 
-#include "Viewer.h"
+#include "user_viewer.h"
 
 int main(int argc, char** argv)
 {

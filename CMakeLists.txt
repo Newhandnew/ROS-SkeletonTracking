@@ -66,5 +66,5 @@ target_link_libraries(skeleton_tracker OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} 
 add_executable(simple_user src/simpleUser.cpp)
 target_link_libraries(simple_user OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 
-add_executable(user_viewer src/main.cpp src/Viewer.cpp)
+add_executable(user_viewer src/main.cpp src/user_viewer.cpp)
 target_link_libraries(user_viewer OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})

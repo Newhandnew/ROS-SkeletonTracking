@@ -11,7 +11,7 @@
 #include <inttypes.h>
 #endif
 
-#include "Viewer.h"
+#include "user_viewer.h"
 
 #if (ONI_PLATFORM == ONI_PLATFORM_MACOSX)
         #include <GLUT/glut.h>
@@ -22,6 +22,9 @@
 #include <NiteSampleUtilities.h>
 //added
 #include <iostream>
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+
 #include <math.h>
 #define PI 3.1415926
 
@@ -47,6 +50,7 @@ bool g_drawFrameId = false;
 bool g_golf = true;
 
 int g_nXRes = 0, g_nYRes = 0;
+
 
 // time to hold in pose to exit program. In milliseconds.
 const int g_poseTimeoutToExit = 2000;
@@ -89,6 +93,11 @@ void SampleViewer::Finalize()
 
 openni::Status SampleViewer::Init(int argc, char **argv)
 {
+	ros::init(argc, argv, "user_viewer");
+	ros::NodeHandle n;
+	movePublisher = n.advertise<std_msgs::String>("cmd_erica", 20);
+	shoulderYaw = 0;
+
 	m_pTexMap = NULL;
 
 	openni::Status rc = openni::OpenNI::initialize();
@@ -345,7 +354,6 @@ void DrawSkeleton(nite::UserTracker* pUserTracker, const nite::UserData& userDat
 void SampleViewer::Display()
 {
 	// namespace bg = boost::geometry;	
-
 	nite::UserTrackerFrameRef userTrackerFrame;
 	openni::VideoFrameRef depthFrame;
 	nite::Status rc = m_pUserTracker->readFrame(&userTrackerFrame);
@@ -561,12 +569,21 @@ void SampleViewer::Display()
 		// bg::model::point<int, 3, bg::cs::cartesian> v1(vec_x, vec_y, vec_z);
 		// bg::model::point<double, 3, bg::cs::spherical<bg::degree> > v2;
 		// bg::transform(v1, v2);
-		double r, theta, phi;
+		double r, theta, radianPhi;
+		int phi;
 		r = sqrt(vec_x*vec_x + vec_y*vec_y + vec_z*vec_z);
 		theta = acos(vec_z / r);
-		phi = atan2(vec_y, vec_x);
+		radianPhi = atan2(vec_y, vec_x);
+		theta = radian2Degree(theta, 0);
+		phi = radian2Degree(radianPhi, 70);	
+		// constraint movement
+		if (abs(shoulderYaw - phi) < 10) {
+			shoulderYaw = phi;
+			phi = angleHandler(phi);	// when hand's down, it's 70 degree
+			actionPublish(phi, 0, 0);
+		}
 
-		sprintf(buffer,"(theta=%5f, phi=%5f, r=%5f)", (theta/PI) * 180, (phi/PI) * 180, r);
+		sprintf(buffer,"(theta=%1f, phi=%d, r=%5f)", theta, phi, r);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glRasterPos2i(20, 60);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
@@ -680,9 +697,28 @@ openni::Status SampleViewer::InitOpenGL(int argc, char **argv)
 	return openni::STATUS_OK;
 
 }
+
 void SampleViewer::InitOpenGLHooks()
 {
 	glutKeyboardFunc(glutKeyboard);
 	glutDisplayFunc(glutDisplay);
 	glutIdleFunc(glutIdle);
+}
+
+int SampleViewer::radian2Degree(double radian, int initialAngle) {
+	return int((radian / PI) * 180) + initialAngle;
+}
+
+int SampleViewer::angleHandler(int inputAngle) {
+	if(inputAngle < 0)
+		inputAngle += 360;
+	return inputAngle;
+}
+
+void SampleViewer::actionPublish(int shoulderYaw, int shoulderPitch, int elbowYaw) {
+	std_msgs::String msg;
+	char message[20];
+	sprintf(message, "7.2.1.%d.%d.0.%d.0", shoulderYaw, shoulderPitch, elbowYaw);
+  	msg.data = message;//ss.str();
+		movePublisher.publish(msg);
 }
