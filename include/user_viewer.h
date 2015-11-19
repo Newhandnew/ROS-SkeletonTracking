@@ -56,7 +56,7 @@ private:
 	nite::UserId m_poseUser;
 	uint64_t m_poseTime;
 
-	int shoulderYaw;
+	int shoulderYaw, shoulderPitch, elbowYaw;
 	int radian2Degree(double radian, int initialAngle);	// change from radian to degree
 	int angleHandler(int inputAngle);	// range limit 0 to 360
 	void actionPublish(int shoulderYaw, int shoulderPitch, int elbowYaw);

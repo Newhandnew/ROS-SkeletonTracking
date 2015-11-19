@@ -47,7 +47,7 @@ bool g_drawBackground = true;
 bool g_drawDepth = true;
 bool g_drawFrameId = false;
 
-bool g_golf = true;
+// bool g_golf = true;
 
 int g_nXRes = 0, g_nYRes = 0;
 
@@ -97,6 +97,7 @@ openni::Status SampleViewer::Init(int argc, char **argv)
 	ros::NodeHandle n;
 	movePublisher = n.advertise<std_msgs::String>("cmd_erica", 20);
 	shoulderYaw = 0;
+	shoulderPitch = 0;
 
 	m_pTexMap = NULL;
 
@@ -545,76 +546,98 @@ void SampleViewer::Display()
 		} //user
 
 		char buffer[80] = "";
-//		int pos_x,pos_y,pos_z;
-		int vec_x,vec_y,vec_z;
-//		pos_x = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().x;
-//		pos_y = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().y;
-//		pos_z = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().z;
+		// ---------------- calculate shoulder 2 DOF ----------------------
+		int shoulderX, shoulderY, shoulderZ;
 
-		vec_x = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().x - 
+		shoulderX = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().x - 
 				user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().x;
-		vec_y = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().y - 
+		shoulderY = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().y - 
 				user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().y;
-		vec_z = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().z - 
+		shoulderZ = user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().z - 
 				user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER).getPosition().z;
 
-		//sprintf(buffer,"(x=%5d, y=%5d, z=%5d)", pos_x, pos_y, pos_z);
-		sprintf(buffer,"(x=%5d, y=%5d, z=%5d)", vec_x, vec_y, vec_z);
+		// sprintf(buffer,"(x=%5d, y=%5d, z=%5d)", shoulderX, shoulderY, shoulderZ);
+		// glColor3f(1.0f, 0.0f, 0.0f);
+		// glRasterPos2i(20, 20);
+		// glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
+
+		double r, radianTheta, radianPhi;
+		int phi, theta;
+		r = sqrt(shoulderX*shoulderX + shoulderY*shoulderY + shoulderZ*shoulderZ);
+		radianTheta = acos(shoulderZ / r);
+		radianPhi = atan2(shoulderY, shoulderX);
+		theta = radian2Degree(radianTheta, -60);	// horizontal rise it's -60 degree
+		phi = radian2Degree(radianPhi, 70);			// when hand's down, it's 70 degree
+		int shoulderYawNow = phi * sin(theta * PI /180);
+		int shoulderPitchNow = phi * cos(theta * PI /180);
+
+		sprintf(buffer,"(theta=%d, shoulderYaw=%d, shoulderPitch=%d)", theta, shoulderYawNow, shoulderPitchNow);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glRasterPos2i(20, 20);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
-//mic
-		//convert cartesian to spherical
-		//bg::model::point<int, 3, bg::cs::cartesian> v1(pos_x, pos_y, pos_z);
-		// bg::model::point<int, 3, bg::cs::cartesian> v1(vec_x, vec_y, vec_z);
-		// bg::model::point<double, 3, bg::cs::spherical<bg::degree> > v2;
-		// bg::transform(v1, v2);
-		double r, theta, radianPhi;
-		int phi;
-		r = sqrt(vec_x*vec_x + vec_y*vec_y + vec_z*vec_z);
-		theta = acos(vec_z / r);
-		radianPhi = atan2(vec_y, vec_x);
-		theta = radian2Degree(theta, 0);
-		phi = radian2Degree(radianPhi, 70);	
-		// constraint movement
-		if (abs(shoulderYaw - phi) < 10) {
-			shoulderYaw = phi;
-			phi = angleHandler(phi);	// when hand's down, it's 70 degree
-			actionPublish(phi, 0, 0);
-		}
 
-		sprintf(buffer,"(theta=%1f, phi=%d, r=%5f)", theta, phi, r);
+		// ------------------- calculate elbow 1 DOF -----------------------
+		int elbowX, elbowY, elbowZ;
+
+		elbowX = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().x - 
+			 user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().x;
+		elbowY = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().y - 
+			 user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().y;
+		elbowZ = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().z - 
+			 user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW).getPosition().z;
+
+		r = sqrt(elbowX*elbowX + elbowY*elbowY + elbowZ*elbowZ);
+		radianTheta = acos(elbowZ / r);
+		radianPhi = atan2(elbowY, elbowX);
+		theta = radian2Degree(radianTheta, 0);	// horizontal rise it's -60 degree
+		phi = radian2Degree(radianPhi, 0);			// when hand's down, it's 70 degree
+		int elbowYawNow = phi;
+		// int shoulderPitchNow = phi * cos(theta * PI /180);
+
+		sprintf(buffer,"(theta=%d, phi=%d)", theta, phi);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glRasterPos2i(20, 60);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
 
-		if(g_golf)
-		{
-			int x1,y1,z1,x2,y2,z2;
-
-			x1 = user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND).getPosition().x - 
-				 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().x;
-			y1 = user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND).getPosition().y - 
-				 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().y;
-			z1 = user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND).getPosition().z - 
-				 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().z;
-			x2 = user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER).getPosition().x - 
-				 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().x;
-			y2 = user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER).getPosition().y - 
-				 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().y;
-			z2 = user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER).getPosition().z - 
-				 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().z;
-			double dot = x1*x2 + y1*y2 + z1*z2;
-			double lenSq1 = x1*x1 + y1*y1 + z1*z1;
-			double lenSq2 = x2*x2 + y2*y2 + z2*z2;
-			double angle = acos(dot/sqrt(lenSq1 * lenSq2));
-			
-			sprintf(buffer,"left angle =%5f", (angle/PI)*180);
-			glColor3f(1.0f, 0.0f, 0.0f);
-			glRasterPos2i(1000, 50);
-			glPrintString(GLUT_BITMAP_TIMES_ROMAN_24, buffer);
-			//glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
+		// constraint movement and publish message
+		if ((abs(shoulderYaw - shoulderYawNow) < 10) && (abs(shoulderPitch - shoulderPitchNow) < 10) &&	(abs(elbowYaw - elbowYawNow) < 10) && (theta >= 0)) {
+			shoulderYaw = shoulderYawNow;
+			shoulderPitch = shoulderPitchNow;
+			elbowYaw = elbowYawNow;
+			shoulderYawNow = angleHandler(shoulderYawNow);
+			shoulderPitchNow = angleHandler(shoulderPitchNow);
+			elbowYawNow = angleHandler(elbowYawNow);
+			actionPublish(shoulderYawNow, shoulderPitchNow, elbowYawNow);
 		}
+
+
+		// if(g_golf)
+		// {
+		// 	int x1,y1,z1,x2,y2,z2;
+
+		// 	x1 = user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND).getPosition().x - 
+		// 		 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().x;
+		// 	y1 = user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND).getPosition().y - 
+		// 		 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().y;
+		// 	z1 = user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND).getPosition().z - 
+		// 		 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().z;
+		// 	x2 = user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER).getPosition().x - 
+		// 		 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().x;
+		// 	y2 = user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER).getPosition().y - 
+		// 		 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().y;
+		// 	z2 = user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER).getPosition().z - 
+		// 		 user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW).getPosition().z;
+		// 	double dot = x1*x2 + y1*y2 + z1*z2;
+		// 	double lenSq1 = x1*x1 + y1*y1 + z1*z1;
+		// 	double lenSq2 = x2*x2 + y2*y2 + z2*z2;
+		// 	double angle = acos(dot/sqrt(lenSq1 * lenSq2));
+			
+		// 	sprintf(buffer,"left angle =%5f", (angle/PI)*180);
+		// 	glColor3f(1.0f, 0.0f, 0.0f);
+		// 	glRasterPos2i(1000, 50);
+		// 	glPrintString(GLUT_BITMAP_TIMES_ROMAN_24, buffer);
+		// 	//glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
+		// }
 
 	}
 
