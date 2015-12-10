@@ -56,10 +56,28 @@ private:
 	nite::UserId m_poseUser;
 	uint64_t m_poseTime;
 
-	int shoulderYaw, shoulderPitch, elbowYaw;
+	struct Spherical {
+		double r, radianTheta, radianPhi;
+	};
+	static const int cmd_lengthTwoArm = 12;
+	static const int cmd_type1Angle = 2;
+	static const int cmd_type2BothArm = 3;
+
+	static const int rightShoulderYawInit = -60;		// horizontal rise it's -60 degree
+	static const int rightShoulderPitchInit = 70;		// when hand's down, it's 70 degree
+	static const int rightElbowYawInit = 0;			// elbow initial postion is 0 degree
+	static const int leftShoulderYawInit = -60;		// horizontal rise it's -60 degree
+	static const int leftShoulderPitchInit = 70;		// when hand's down, it's 70 degree
+	static const int leftElbowYawInit = 0;			// elbow initial postion is 0 degree
+
+	static const int moveLimitDegree = 10;
+
+	int rightShoulderYaw, rightShoulderPitch, rightElbowYaw;
+	int leftShoulderYaw, leftShoulderPitch, leftElbowYaw;
+	Spherical Cartesian2Spherical(int x, int y, int z);
 	int radian2Degree(double radian, int initialAngle);	// change from radian to degree
 	int angleHandler(int inputAngle);	// range limit 0 to 360
-	void actionPublish(int shoulderYaw, int shoulderPitch, int elbowYaw);
+	void actionPublish(int rightShoulderYaw, int rightShoulderPitch, int rightElbowYaw, int leftShoulderYaw, int leftShoulderPitch, int leftElbowYaw);
 };
 
 
