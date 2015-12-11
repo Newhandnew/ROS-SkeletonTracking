@@ -63,14 +63,14 @@ private:
 	static const int cmd_type1Angle = 2;
 	static const int cmd_type2BothArm = 3;
 
-	static const int rightShoulderYawInit = -60;		// horizontal rise it's -60 degree
+	static const int rightShoulderThetaInit = -60;		// horizontal rise it's -60 degree
 	static const int rightShoulderPitchInit = 70;		// when hand's down, it's 70 degree
-	static const int rightElbowYawInit = 0;			// elbow initial postion is 0 degree
-	static const int leftShoulderYawInit = -60;		// horizontal rise it's -60 degree
-	static const int leftShoulderPitchInit = 70;		// when hand's down, it's 70 degree
-	static const int leftElbowYawInit = 0;			// elbow initial postion is 0 degree
+	static const int rightElbowYawInit = 30;			// elbow initial postion is 0 degree
+	static const int leftShoulderThetaInit = -60;		// horizontal rise it's -60 degree
+	static const int leftShoulderPitchInit = 90;		// when hand's down, it's 70 degree
+	static const int leftElbowYawInit = 100;			// elbow initial postion is 0 degree
 
-	static const int moveLimitDegree = 10;
+	static const int moveLimitDegree = 20;
 
 	int rightShoulderYaw, rightShoulderPitch, rightElbowYaw;
 	int leftShoulderYaw, leftShoulderPitch, leftElbowYaw;
