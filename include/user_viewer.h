@@ -66,18 +66,23 @@ private:
 	static const int rightShoulderThetaInit = -60;		// horizontal rise it's -60 degree
 	static const int rightShoulderPitchInit = 70;		// when hand's down, it's 70 degree
 	static const int rightElbowYawInit = 30;			// elbow initial postion is 0 degree
+	static const int rightElbowThetaInit = -170;			
 	static const int leftShoulderThetaInit = -60;		// horizontal rise it's -60 degree
 	static const int leftShoulderPitchInit = 90;		// when hand's down, it's 70 degree
 	static const int leftElbowYawInit = 100;			// elbow initial postion is 0 degree
+	static const int leftElbowThetaInit = -170;	
 
 	static const int moveLimitDegree = 20;
 
-	int rightShoulderYaw, rightShoulderPitch, rightElbowYaw;
-	int leftShoulderYaw, leftShoulderPitch, leftElbowYaw;
+	int rightShoulderYaw, rightShoulderPitch, rightElbowYaw, rightElbowTheta;
+	int rightShoulderYawPub, rightShoulderPitchPub, rightElbowYawPub, rightElbowThetaPub;
+	int leftShoulderYaw, leftShoulderPitch, leftElbowYaw, leftElbowTheta;
+	int leftShoulderYawPub, leftShoulderPitchPub, leftElbowYawPub, leftElbowThetaPub;
+
 	Spherical Cartesian2Spherical(int x, int y, int z);
 	int radian2Degree(double radian, int initialAngle);	// change from radian to degree
 	int angleHandler(int inputAngle);	// range limit 0 to 360
-	void actionPublish(int rightShoulderYaw, int rightShoulderPitch, int rightElbowYaw, int leftShoulderYaw, int leftShoulderPitch, int leftElbowYaw);
+	void actionPublish(int rightShoulderYaw, int rightShoulderPitch, int rightElbowTheta, int rightElbowYaw, int leftShoulderYaw, int leftShoulderPitch, int leftElbowTheta, int leftElbowYaw);
 };
 
 

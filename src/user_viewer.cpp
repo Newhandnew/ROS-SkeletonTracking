@@ -97,12 +97,12 @@ openni::Status SampleViewer::Init(int argc, char **argv)
 	ros::init(argc, argv, "user_viewer");
 	ros::NodeHandle n;
 	movePublisher = n.advertise<std_msgs::String>("cmd_erica", 20);
-	rightShoulderYaw = 0;
-	rightShoulderPitch = 0;
-	rightElbowYaw = 0;
-	leftShoulderYaw = 0;
-	leftShoulderPitch = 0;
-	leftElbowYaw = 0;
+	// initial variable
+	rightShoulderYaw = 0, rightShoulderPitch = 0, rightElbowTheta = 0, rightElbowYaw = 0;
+	rightShoulderYawPub = 0, rightShoulderPitchPub = 0, rightElbowYawPub = 0, rightElbowThetaPub = 0;
+	leftShoulderYaw = 0, leftShoulderPitch = 0, leftElbowTheta = 0, leftElbowYaw = 0;
+	leftShoulderYawPub = 0, leftShoulderPitchPub = 0, leftElbowYawPub = 0, leftElbowThetaPub = 0;
+
 
 	m_pTexMap = NULL;
 
@@ -574,7 +574,7 @@ void SampleViewer::Display()
 		glRasterPos2i(20, 20);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
 
-		// ------------------- calculate right elbow 1 DOF -----------------------
+		// ------------------- calculate right elbow 2 DOF -----------------------
 		int rightElbowX, rightElbowY, rightElbowZ;
 
 		rightElbowX = user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND).getPosition().x - 
@@ -586,10 +586,10 @@ void SampleViewer::Display()
 
 		Spherical rightElbowSpherical;
 		rightElbowSpherical = Cartesian2Spherical(rightElbowX, rightElbowY, rightElbowZ);
-		int rightElbowTheta = radian2Degree(rightElbowSpherical.radianTheta, 0);
+		int rightElbowThetaNow = - radian2Degree(rightElbowSpherical.radianTheta, rightElbowThetaInit);	// reverse for system
 		int rightElbowYawNow = radian2Degree(rightElbowSpherical.radianPhi, rightElbowYawInit);
 
-		sprintf(buffer,"(rightElbowTheta=%d, rightElbowYawNow=%d)", rightElbowTheta, rightElbowYawNow);
+		sprintf(buffer,"(rightElbowThetaNow=%d, rightElbowYawNow=%d)", rightElbowThetaNow, rightElbowYawNow);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glRasterPos2i(20, 60);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
@@ -618,7 +618,7 @@ void SampleViewer::Display()
 		glRasterPos2i(20, 100);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
 
-		// ------------------- calculate left elbow 1 DOF -----------------------
+		// ------------------- calculate left elbow 2 DOF -----------------------
 		int leftElbowX, leftElbowY, leftElbowZ;
 
 		leftElbowX = user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND).getPosition().x - 
@@ -630,10 +630,10 @@ void SampleViewer::Display()
 
 		Spherical leftElbowSpherical;
 		leftElbowSpherical = Cartesian2Spherical(leftElbowX, leftElbowY, leftElbowZ);
-		int leftElbowTheta = radian2Degree(leftElbowSpherical.radianTheta, 0);
+		int leftElbowThetaNow = radian2Degree(leftElbowSpherical.radianTheta, leftElbowThetaInit);
 		int leftElbowYawNow = radian2Degree(leftElbowSpherical.radianPhi, leftElbowYawInit);
 
-		sprintf(buffer,"(x=%d, y=%d, z=%d, leftElbowTheta=%d, leftElbowYawNow=%d)", leftElbowX, leftElbowY, leftElbowZ, leftElbowTheta, leftElbowYawNow);
+		sprintf(buffer,"(leftElbowTheta=%d, leftElbowYawNow=%d)", leftElbowThetaNow, leftElbowYawNow);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glRasterPos2i(20, 140);
 		glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
@@ -641,26 +641,28 @@ void SampleViewer::Display()
 		// ----------------  constraint movement and publish message  ------------
 		int rightShoulderYawDiff = abs(rightShoulderYaw - rightShoulderYawNow);
 		int rightShoulderPitchDiff = abs(rightShoulderPitch - rightShoulderPitchNow);
+		int rightElbowThetaDiff = abs(rightElbowTheta - rightElbowThetaNow);
 		int rightElbowYawDiff = abs(rightElbowYaw - rightElbowYawNow);
 		int leftShoulderYawDiff = abs(leftShoulderYaw - leftShoulderYawNow);
 		int leftShoulderPitchDiff = abs(leftShoulderPitch - leftShoulderPitchNow);
+		int leftElbowThetaDiff = abs(leftElbowTheta - leftElbowThetaNow);
 		int leftElbowYawDiff = abs(leftElbowYaw - leftElbowYawNow);
-		if ((rightShoulderYawDiff < moveLimitDegree) && (rightShoulderPitchDiff < moveLimitDegree) && (rightElbowYawDiff < moveLimitDegree) && (rightShoulderTheta >= 0)) {
+		if ((rightShoulderYawDiff < moveLimitDegree) && (rightShoulderPitchDiff < moveLimitDegree) && (rightElbowThetaDiff < moveLimitDegree) && (rightElbowYawDiff < moveLimitDegree) && (rightShoulderTheta >= 0)) {
+			// in range then refresh robot angle
 			rightShoulderYaw = rightShoulderYawNow;
 			rightShoulderPitch = rightShoulderPitchNow;
+			rightElbowTheta = rightElbowThetaNow;
 			rightElbowYaw = rightElbowYawNow;
 			// change the angle to 0 to 360 and publish
-			int rightShoulderYawPub = angleHandler(rightShoulderYaw);
-			int rightShoulderPitchPub = angleHandler(rightShoulderPitch);
-			int rightElbowYawPub = angleHandler(rightElbowYaw);
-			int leftShoulderYawPub = angleHandler(leftShoulderYaw);
-			int leftShoulderPitchPub = angleHandler(leftShoulderPitch);
-			int leftElbowYawPub = angleHandler(leftElbowYaw);
+			rightShoulderYawPub = angleHandler(rightShoulderYaw);
+			rightShoulderPitchPub = angleHandler(rightShoulderPitch);
+			rightElbowThetaPub = angleHandler(rightElbowTheta);
+			rightElbowYawPub = angleHandler(rightElbowYaw);
 			sprintf(buffer,"tracking!");
 			glColor3f(0.0f, 0.0f, 1.0f);
 			glRasterPos2i(20, 180);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
-			actionPublish(rightShoulderYawPub, rightShoulderPitchPub, rightElbowYawPub, leftShoulderYawPub, leftShoulderPitchPub, leftElbowYawPub);
+			actionPublish(rightShoulderYawPub, rightShoulderPitchPub, rightElbowThetaPub, rightElbowYawPub, leftShoulderYawPub, leftShoulderPitchPub, leftElbowThetaPub, leftElbowYawPub);
 		}
 		else {
 			sprintf(buffer,"soulder yaw: %d, soulder pitch: %d, elbow yaw: %d, rightShoulderTheta > 0: %d", rightShoulderYaw - rightShoulderYawNow, rightShoulderPitch - rightShoulderPitchNow, rightElbowYaw - rightElbowYawNow, rightShoulderTheta);
@@ -668,21 +670,20 @@ void SampleViewer::Display()
 			glRasterPos2i(20, 180);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
 		}
-		if((leftShoulderYawDiff < moveLimitDegree) && (leftShoulderPitchDiff < moveLimitDegree) && (leftElbowYawDiff < moveLimitDegree) && (leftShoulderTheta >= 0)) {
+		if((leftShoulderYawDiff < moveLimitDegree) && (leftShoulderPitchDiff < moveLimitDegree) && (leftElbowThetaDiff < moveLimitDegree) && (leftElbowYawDiff < moveLimitDegree) && (leftShoulderTheta >= 0)) {
 			leftShoulderYaw = leftShoulderYawNow;
 			leftShoulderPitch = leftShoulderPitchNow;
+			leftElbowTheta = leftElbowThetaNow;
 			leftElbowYaw = leftElbowYawNow;
-			int rightShoulderYawPub = angleHandler(rightShoulderYaw);
-			int rightShoulderPitchPub = angleHandler(rightShoulderPitch);
-			int rightElbowYawPub = angleHandler(rightElbowYaw);
-			int leftShoulderYawPub = angleHandler(leftShoulderYaw);
-			int leftShoulderPitchPub = angleHandler(leftShoulderPitch);
-			int leftElbowYawPub = angleHandler(leftElbowYaw);
+			leftShoulderYawPub = angleHandler(leftShoulderYaw);
+			leftShoulderPitchPub = angleHandler(leftShoulderPitch);
+			leftElbowThetaPub = angleHandler(leftElbowTheta);
+			leftElbowYawPub = angleHandler(leftElbowYaw);
 			sprintf(buffer,"tracking!");
 			glColor3f(0.0f, 0.3f, 1.0f);
 			glRasterPos2i(20, 220);
 			glPrintString(GLUT_BITMAP_HELVETICA_18, buffer);
-			actionPublish(rightShoulderYawPub, rightShoulderPitchPub, rightElbowYawPub, leftShoulderYawPub, leftShoulderPitchPub, leftElbowYawPub);
+			actionPublish(rightShoulderYawPub, rightShoulderPitchPub, rightElbowThetaPub, rightElbowYawPub, leftShoulderYawPub, leftShoulderPitchPub, leftElbowThetaPub, leftElbowYawPub);
 		}
 		else {
 			sprintf(buffer,"soulder yaw: %d, soulder pitch: %d, elbow yaw: %d, leftShoulderTheta > 0: %d", leftShoulderYaw - leftShoulderYawNow, leftShoulderPitch - leftShoulderPitchNow, leftElbowYaw - leftElbowYawNow, leftShoulderTheta);
@@ -801,10 +802,10 @@ int SampleViewer::angleHandler(int inputAngle) {
 	return inputAngle;
 }
 
-void SampleViewer::actionPublish(int rightShoulderYaw, int rightShoulderPitch, int rightElbowYaw, int leftShoulderYaw, int leftShoulderPitch, int leftElbowYaw) {
+void SampleViewer::actionPublish(int rightShoulderYaw, int rightShoulderPitch, int rightElbowTheta, int rightElbowYaw, int leftShoulderYaw, int leftShoulderPitch, int leftElbowTheta, int leftElbowYaw) {
 	std_msgs::String msg;
-	char message[30];
-	sprintf(message, "%d.%d.%d.%d.%d.0.%d.0.%d.%d.0.%d.0", cmd_lengthTwoArm, cmd_type1Angle, cmd_type2BothArm, rightShoulderYaw, rightShoulderPitch, rightElbowYaw, leftShoulderYaw, leftShoulderPitch, leftElbowYaw);
+	char message[40];
+	sprintf(message, "%d.%d.%d.%d.%d.%d.%d.0.%d.%d.%d.%d.0", cmd_lengthTwoArm, cmd_type1Angle, cmd_type2BothArm, rightShoulderYaw, rightShoulderPitch, rightElbowTheta, rightElbowYaw, leftShoulderYaw, leftShoulderPitch, leftElbowTheta, leftElbowYaw);
   	msg.data = message;//ss.str();
 		movePublisher.publish(msg);
 }
